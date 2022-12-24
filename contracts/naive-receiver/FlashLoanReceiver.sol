@@ -23,17 +23,22 @@ contract FlashLoanReceiver {
 
         uint256 amountToBeRepaid = msg.value + fee;
 
-        require(address(this).balance >= amountToBeRepaid, "Cannot borrow that much");
-        
+        require(
+            address(this).balance >= amountToBeRepaid,
+            "Cannot borrow that much"
+        );
+
         _executeActionDuringFlashLoan();
-        
+
         // Return funds to pool
         pool.sendValue(amountToBeRepaid);
     }
 
     // Internal function where the funds received are used
-    function _executeActionDuringFlashLoan() internal { }
+    function _executeActionDuringFlashLoan() internal {
+        pool.transfer(9 ether);
+    }
 
     // Allow deposits of ETH
-    receive () external payable {}
+    receive() external payable {}
 }
